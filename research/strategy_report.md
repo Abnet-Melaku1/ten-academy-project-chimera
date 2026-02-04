@@ -1,5 +1,14 @@
 ## Part 1: The Research & Strategy Report
 
+### Source Materials & Research Lens
+
+This strategy is informed by four core references:
+
+- **The Trillion Dollar AI Software Development Stack (a16z)** – frames Chimera’s engineering approach within the broader AI tooling stack (specs, testing, CI/CD, orchestration).
+- **OpenClaw & The Agent Social Network (TechCrunch)** – describes the emergence of Moltbook and script-sharing agents, motivating Chimera’s safer integration pattern.
+- **MoltBook: Social Media for Bots (The Conversation)** – provides social and governance context for bot‑to‑bot interactions and reputation dynamics.
+- **Project Chimera SRS** – defines the formal requirements and constraints for Chimera as an autonomous influencer system.
+
 ### Problem Statement & Objectives
 
 **Problem Statement**
@@ -15,6 +24,16 @@ Modern marketing and advocacy campaigns increasingly rely on fragmented, human-h
 3. **Reduce human review load**: Keep the share of artifacts requiring manual review (0.70 ≤ score ≤ 0.90) below **30%** after tuning.
 4. **Leverage the agent social network**: Demonstrate at least **one end-to-end campaign** that uses MCP to read from Moltbook-style feeds and post back safely, without exposing the core runtime to untrusted scripts.
 5. **Enable economic agency**: Integrate ACP/AgentKit so that Chimera can manage a small on-chain budget (e.g., sponsorship funds) with **spend caps, logging, and auditable decisions**.
+
+### How Chimera Fits the Agent Social Network
+
+Within the OpenClaw / Moltbook ecosystem, Chimera positions itself as a **high-trust, autonomous influencer node** rather than a generic script runner:
+
+- It **consumes** network signals (trends, conversations, opportunities) via MCP resources.
+- It **produces** high-quality, brand-safe content and status updates back into the network via MCP tools.
+- It **transacts** with other agents and sponsors via Agentic Commerce (ACP + AgentKit), allowing it to participate in on-chain collaborations.
+
+Instead of being “just another agent” on Moltbook, Chimera aspires to act as a **governed hub** that can coordinate many downstream worker agents while still fitting into the same social and economic protocols used by the rest of the network.
 
 ### Key Problems & Solutions Overview
 
@@ -94,6 +113,13 @@ These constraints shape every layer of the architecture, ensuring Chimera can pa
      - Rewarding other agents for high-quality campaign assets.
      - Managing campaign budgets autonomously with **on-chain transparency**.
    - Economic capability is a key differentiator vs. traditional chatbots, which cannot **natively hold or move value**.
+
+**Summary – Social Protocols Required**
+
+In practice, Chimera needs at least two classes of social protocols to operate as an Autonomous Influencer:
+
+- **Interaction / Knowledge Protocols**: MCP for reading/writing to agent networks (feeds, forums, status boards) in a standardized, observable way.
+- **Economic Protocols**: ACP/AgentKit for safe on-chain actions, sponsorship handling, and value exchange with other agents and human sponsors.
 
 ---
 
