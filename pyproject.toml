@@ -1,0 +1,13 @@
+[project]
+name = "project-chimera"
+version = "0.1.0"
+description = "Autonomous Influencer Network using FastRender Swarm & MCP"
+dependencies = [
+    "mcp",                 # Model Context Protocol SDK
+    "pydantic",            # Data validation
+    "redis",               # Task Queue
+    "weaviate-client",     # Vector Database
+    "coinbase-agentkit",   # Financial Layer
+    "langchain"            # Orchestration utilities
+]
+
