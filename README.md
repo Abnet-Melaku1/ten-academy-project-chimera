@@ -5,6 +5,30 @@ It follows the **Planner / Worker / Judge** FastRender Swarm pattern and is buil
 
 ---
 
+## Quick Start
+
+If you have **Python 3.11** and `pip` installed, you can get going quickly from the repo root using either **raw `pip` + `pytest`** or the **Makefile**.
+
+### Option 1 – Direct `pip` + `pytest`
+
+```bash
+pip install -e .
+pytest -q
+```
+
+This installs Project Chimera in editable mode along with its dependencies (from `pyproject.toml`), then runs the test suite with `pytest` in quiet mode.
+
+### Option 2 – Using `make` (recommended)
+
+```bash
+make setup
+make test
+```
+
+`make setup` uses the `Makefile` to upgrade `pip`, install `uv`, and install the package and its dependencies. `make test` runs the tests via `pytest` using the existing test configuration.
+
+---
+
 ## Getting Started
 
 - **Python version**: 3.11 (see `Dockerfile` and `pyproject.toml`).

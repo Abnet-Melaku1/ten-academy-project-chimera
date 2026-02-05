@@ -59,3 +59,16 @@ Out of scope for v1:
 - Each major feature or flow in `functional.md` should have a corresponding section or reference in `technical.md`.
 - Commit messages that implement features should reference the relevant spec sections (e.g. `specs/functional.md#hitl-governance`).
 - If behavior diverges from the spec, the spec MUST be updated before or alongside the code change.
+
+---
+
+### 5. SRS Mapping
+
+| **SRS requirement / theme**                                 | **Covered in specs**                                                                                           |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Autonomous Influencer agents using Planner / Worker / Judge | `functional.md` (actors, user stories, flows) + `technical.md` (high-level architecture, services)             |
+| MCP-based integration with external platforms and tools     | `technical.md` (MCP Integration Points) + `openclaw_integration.md` (resources, tools, safety rules)           |
+| HITL governance via Judge confidence thresholds             | `functional.md` (HITL stories, NFRs) + `technical.md` (Judge thresholds, decisions, routing)                   |
+| Data and memory stack (Postgres, Weaviate, Redis, ledger)   | `technical.md` (Data Layer, core data models, semantic memory) + `functional.md` (flows referencing storage)   |
+| OpenClaw / Moltbook agent-network presence and signals      | `openclaw_integration.md` (identity, presence, MCP resources/tools) + `functional.md` (social network stories) |
+| Agentic commerce and sponsorship / economic flows           | `openclaw_integration.md` (sponsorship & economic flows) + `technical.md` (MCP tools for economic actions)     |
