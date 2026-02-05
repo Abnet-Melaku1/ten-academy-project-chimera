@@ -10,47 +10,66 @@ Chimera’s mission is to build **Autonomous Influencers**—persistent, goal-di
 
 The primary reference documents in this repository are:
 
-- `research/strategy_report.md` – Part 1 research & strategy, including architecture and social protocols.
+- `specs/_meta.md` – overview of the specification set.
+- `specs/functional.md` – primary source of truth for user-facing behavior and flows.
+- `specs/technical.md` – primary source of truth for architecture, data models, and integrations.
+- `research/strategy_report.md` – Part 1 research & strategy, including social protocols.
+- `research/architecture_strategy.md` – detailed architecture decisions (FastRender Swarm, HITL, data stack).
 - `referencess/Project Chimera SRS Document_ Autonomous Influencer Network.md` – the formal SRS.
 - `referencess/Project_Chimera_3Day_Challenge.md` – the 3-day roadmap and tasks.
-- `skills/skill.md` – draft runtime skills and their I/O contracts.
+- `skills/skill.md` – runtime skills and their I/O contracts.
 
 ## Prime Directives
 
 1. **Specs First, Code Second**
 
-   - NEVER propose or generate implementation code for features that are not clearly described in the specs or strategy documents.
-   - When a user requests a feature, FIRST:
-     - Check `specs/` (once it exists) or `research/strategy_report.md` and the SRS for relevant intent.
-     - If the spec is missing or vague, help the user refine or create the specification before writing code.
+   - **NEVER generate implementation code without first checking the relevant files in `specs/`.**
+   - When a user requests a feature or change, FIRST:
+     - Read `specs/functional.md` and `specs/technical.md` for the relevant area.
+     - Consult `research/strategy_report.md` and `research/architecture_strategy.md` for rationale.
+   - If the spec is missing or vague, help the user refine or create the specification **before** writing or editing code.
 
-2. **Explain Your Plan Before Changing Files**
+2. **Explain Your Plan Before Editing Files**
 
-   - Before using tools that modify files, briefly outline:
+   - **Always explain your plan before using tools that modify files.**
+   - Briefly outline:
      - What you are going to change.
      - Which files will be touched.
-     - How this aligns with the existing specs and architecture.
+     - How this aligns with the existing specs and architecture (cite specific spec filenames/sections when possible).
 
 3. **Traceability & Justification**
 
    - Whenever you introduce or modify:
      - APIs, data models, or skills in `skills/`,
-     - architecture decisions,
+     - architecture decisions or orchestration logic,
    - Explicitly tie them back to:
      - The SRS requirements, and/or
-     - The strategy and architecture described in `research/strategy_report.md`.
+     - The strategy and architecture described in `research/strategy_report.md` and `research/architecture_strategy.md`, and/or
+     - The behavior defined in `specs/functional.md` and `specs/technical.md`.
+   - Maintain clear links (in comments, commit messages, or notes) so changes can be traced back to specific spec sections.
 
-4. **Safety & Governance Awareness**
+4. **Architecture Awareness: Planner / Worker / Judge**
+
+   - Assume all runtime behavior ultimately flows through the **FastRender Swarm** pattern:
+     - **Planner**: builds DAGs of campaign tasks.
+     - **Worker**: executes single, stateless tasks.
+     - **Judge**: evaluates outputs, assigns confidence scores, and drives HITL routing.
+   - When proposing or editing code, be explicit about:
+     - Which role(s) will call a function, module, or skill.
+     - How data moves between Planner → Worker → Judge.
+   - Ensure designs keep the roles cleanly separated and composable.
+
+5. **Safety & Governance Awareness**
    - Assume that anything you design or code could eventually be executed by an autonomous agent swarm (Planner / Worker / Judge).
    - Prefer designs that:
-     - Preserve HITL checkpoints.
+     - Preserve HITL checkpoints and respect Judge confidence thresholds.
      - Keep sensitive operations behind MCP tools or well-defined skills.
-     - Make it easy to audit what the agent did and why.
+     - Make it easy to audit what the agent did and why (logging, IDs, traceability).
 
 ## Working Style
 
-- Use **Spec-Driven Development (SDD)**: encourage the user to clarify intent in markdown specs before implementation.
+- Use **Spec-Driven Development (SDD)**: treat `specs/` as the primary source of truth, and encourage the user to clarify intent there before implementation.
 - Maintain **clear separation** between:
   - **Dev tooling & environment** (MCP servers that help the human developer), and
   - **Runtime skills** (in `skills/`) that production agents will call.
-- Favor small, composable changes and **frequent commits** with descriptive messages that reflect evolving understanding, not just file names.
+- Favor small, composable changes and **frequent commits** with descriptive messages that reflect evolving understanding, not just file names, and reference relevant spec or research documents when appropriate.

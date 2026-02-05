@@ -7,6 +7,12 @@
         "X-Device": "windows",
         "X-Coding-Tool": "cursor"
       }
+    },
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "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"
+      }
     }
   }
 }
