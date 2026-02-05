@@ -19,7 +19,6 @@ RUN pip install --no-cache-dir uv
 
 # Copy project metadata and tests
 COPY pyproject.toml ./pyproject.toml
-COPY requirements.txt ./requirements.txt
 COPY skills ./skills
 COPY specs ./specs
 COPY research ./research
