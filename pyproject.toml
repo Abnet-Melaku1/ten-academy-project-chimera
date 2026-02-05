@@ -8,6 +8,19 @@ dependencies = [
     "redis",               # Task Queue
     "weaviate-client",     # Vector Database
     "coinbase-agentkit",   # Financial Layer
-    "langchain"            # Orchestration utilities
+    "langchain",           # Orchestration utilities
+    "pytest",              # Testing framework
+    "uv"                   # Python packaging & env manager
 ]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# This project currently has no importable Python package; we use
+# `pyproject.toml` mainly to manage dependencies for tooling/tests.
+# Explicitly set an empty package list so setuptools does not try to
+# auto-discover top-level directories like `specs/`, `skills/`, etc.
+packages = []
 

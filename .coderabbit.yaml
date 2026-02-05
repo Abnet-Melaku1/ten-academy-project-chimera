@@ -1,0 +1,54 @@
+# AI Review Policy for Project Chimera
+#
+# This file describes expectations for any AI-assisted code review or
+# automation that may be applied to this repository. It does not need to be
+# wired to a specific service to be useful; it serves as documentation of
+# review standards.
+
+version: 1
+
+project:
+  name: project-chimera
+  description: >
+    Autonomous Influencer Network using a FastRender Swarm (Planner/Worker/Judge)
+    with MCP-based connectivity and Spec-Driven Development (SDD).
+
+policies:
+  - name: spec-alignment
+    description: >
+      Changes SHOULD align with the specifications in the `specs/` directory and
+      the research documents in `research/`. Reviewers (human or AI) SHOULD:
+        - Check that new or modified code maps to existing sections in
+          `specs/functional.md` and `specs/technical.md`.
+        - Flag changes that implement behavior not described in specs, or that
+          contradict the architecture and data contracts documented there.
+        - Encourage authors to update specs FIRST when behavior changes.
+
+  - name: architecture-consistency
+    description: >
+      Implementations SHOULD respect the FastRender Swarm pattern and the
+      Planner/Worker/Judge role separation. Reviewers SHOULD:
+        - Verify that new modules/functions clearly belong to one role
+          (Planner, Worker, or Judge) and do not mix concerns.
+        - Ensure external I/O occurs via MCP resources/tools or well-defined
+          skills, not ad hoc API calls.
+
+  - name: security-and-governance
+    description: >
+      Code SHOULD be evaluated for security and governance implications,
+      especially where agents interact with external networks or financial
+      systems. Reviewers SHOULD:
+        - Look for obvious injection, deserialization, or credential handling
+          issues.
+        - Ensure that sensitive actions (publishing, payments) can be gated by
+          the Judge and HITL thresholds.
+        - Prefer designs with clear logging, trace IDs, and auditability.
+
+  - name: testing-and-tdd
+    description: >
+      Tests are the definition of "Done." Reviewers SHOULD:
+        - Prefer changes that add or update tests in `tests/` alongside code
+          changes.
+        - Encourage writing failing tests first for new features or bug fixes.
+        - Check that tests reflect the JSON contracts and data models in
+          `specs/technical.md` and `skills/skill.md`.
