@@ -82,12 +82,19 @@ The default container command is `make test`, as configured in the `Dockerfile`.
 
 - **Runtime skills (`skills/`)**
 
-  - `skill.md` – contracts and boundaries for core runtime skills (trend fetcher, content generator, engagement analyzer).
+  - `skill.md` – contracts and boundaries for core runtime skills (trend fetcher, content generator, engagement analyzer, persona loader).
+
+- **Personas (`personas/`)**
+
+  - `SOUL.md.template` – template for defining agent personas (immutable DNA).
+  - `README.md` – guide for creating and managing SOUL.md files.
+  - Each agent persona is defined via a SOUL.md file (version-controlled, GitOps pattern).
 
 - **Research (`research/`)**
   - `strategy_report.md` – overall strategy and qualitative design.
   - `architecture_strategy.md` – architecture and data stack decisions (Planner / Worker / Judge, storage, MCP).
   - `tooling_strategy.md` – development and tooling conventions for working on Chimera.
+  - `srs_gap_analysis.md` – gap analysis comparing current specs with the SRS document.
 
 When changing behavior or architecture:
 
