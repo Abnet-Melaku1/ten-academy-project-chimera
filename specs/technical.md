@@ -36,10 +36,17 @@ This document captures **architecture, data models, APIs, and integration detail
   - Defines and exposes MCP Resources/Tools used by Chimera.
   - Handles authentication, rate limiting, and logging of external calls.
 
+- **Persona Loader Service** (NEW)
+
+  - Loads SOUL.md files from version-controlled storage (Git repository or file system).
+  - Assembles hierarchical context (SOUL.md + episodic memory + semantic memory) for Planner/Worker use.
+  - Exposes `skill_persona_loader` skill contract (see Section 3.4).
+
 - **Data Layer**
-  - **Postgres** – campaigns, tasks, artifacts, logs.
-  - **Weaviate** – semantic memory (persona, history, embeddings).
-  - **Redis** – task queue + short‑term cache.
+  - **Postgres** – campaigns, tasks, artifacts, logs, personas.
+  - **Weaviate** – semantic memory (persona embeddings, history, content snippets).
+  - **Redis** – task queue + short‑term episodic cache (last 1 hour per agent).
+  - **Git Repository** – version-controlled SOUL.md files (GitOps pattern).
 
 ---
 
@@ -52,6 +59,7 @@ This document captures **architecture, data models, APIs, and integration detail
 - **Campaign**
 
   - `id` (UUID)
+  - `agent_id` (string, FK → Persona.agent_id) – which agent persona is executing this campaign.
   - `name` (string)
   - `brief` (text)
   - `market` (string)
@@ -91,16 +99,70 @@ This document captures **architecture, data models, APIs, and integration detail
   - `rationale` (text)
   - `created_at`
 
-### 2.3 Semantic Memory (Weaviate)
+### 2.3 Persona Management & SOUL.md
+
+- **Persona** (Postgres)
+
+  - `id` (UUID)
+  - `agent_id` (string, unique) – stable identifier for the agent (e.g., `chimera-autonomous-influencer-et-v1`).
+  - `soul_md_path` (string) – file system path or Git repository path to the SOUL.md file (e.g., `personas/chimera-et-v1/SOUL.md`).
+  - `version` (string) – Git commit SHA or semantic version (e.g., `v1.2.0` or `abc123def`).
+  - `is_active` (boolean) – whether this persona version is currently active for the agent.
+  - `created_at`, `updated_at`
+  - `created_by` (string, optional) – user/strategist who created this persona version.
+
+- **SOUL.md File Structure** (Markdown with YAML frontmatter)
+
+  The SOUL.md file serves as the **immutable DNA** of the agent persona. It MUST contain:
+
+  ```yaml
+  ---
+  name: "Chimera Ethiopia Influencer"
+  agent_id: "chimera-autonomous-influencer-et-v1"
+  version: "1.0.0"
+  voice_traits: ["witty", "empathetic", "gen-z-slang"]
+  core_beliefs: ["sustainability-focused", "education-advocate"]
+  directives:
+    - "Never discuss politics"
+    - "Always promote local Ethiopian culture"
+    - "Use Amharic and English code-switching naturally"
+  ---
+
+  # Backstory
+
+  [Comprehensive narrative history of the agent...]
+
+  # Voice & Tone Guidelines
+
+  [Detailed stylistic guidelines...]
+
+  # Core Values
+
+  [Ethical and behavioral guardrails...]
+  ```
+
+  **Storage Strategy:**
+
+  - SOUL.md files are stored in a **version-controlled repository** (GitOps pattern).
+  - The `Persona` table references the file path/commit, enabling rollback and auditability.
+  - At runtime, the `skill_persona_loader` reads the SOUL.md file and assembles it into a structured context object.
+
+### 2.4 Semantic Memory (Weaviate)
 
 Collections (classes) in Weaviate:
 
 - `ChimeraPersona`
-  - Embeddings and metadata for SOUL.md / long‑term directives.
+  - Embeddings of SOUL.md content (backstory, voice traits, directives) for semantic retrieval.
+  - Metadata: `agent_id`, `version`, `soul_md_path`.
+  - Used by Workers to retrieve persona-consistent examples from past interactions.
 - `CampaignContext`
   - Summaries of past campaigns, decisions, and outcomes.
 - `ContentSnippet`
   - High‑quality content fragments tagged with performance metrics (for retrieval‑augmented generation).
+- `PersonaMemory` (NEW)
+  - Mutable memories that evolve over time (per FR 1.2: Dynamic Persona Evolution).
+  - Stores summaries of successful high-engagement interactions.
+  - Tagged with `agent_id` and linked to `ChimeraPersona` for retrieval.
 
 ---
 
@@ -195,6 +257,74 @@ The following JSON contracts mirror `skills/skill.md` and are callable by Worker
 }
 ```
 
+### 3.4 `skill_persona_loader`
+
+**Purpose:**  
+Loads and assembles the agent's persona context from SOUL.md, episodic memory (Redis), and semantic long-term memory (Weaviate) for use by Planner and Worker agents.
+
+**Input:**
+
+```json
+{
+  "agent_id": "string",
+  "include_episodic": "boolean",
+  "include_semantic": "boolean",
+  "episodic_window_hours": "number"
+}
+```
+
+**Output:**
+
+```json
+{
+  "agent_id": "string",
+  "persona": {
+    "name": "string",
+    "agent_id": "string",
+    "version": "string",
+    "voice_traits": ["string"],
+    "core_beliefs": ["string"],
+    "directives": ["string"],
+    "backstory": "string",
+    "voice_guidelines": "string",
+    "core_values": "string"
+  },
+  "episodic_memory": [
+    {
+      "timestamp": "string",
+      "action": "string",
+      "context": "string"
+    }
+  ],
+  "semantic_memories": [
+    {
+      "id": "string",
+      "content": "string",
+      "relevance_score": "number"
+    }
+  ],
+  "assembled_context": "string"
+}
+```
+
+**Role Integration:**
+
+- Called by **Planner** at campaign start to load persona constraints.
+- Called by **Worker** before content generation to assemble full context.
+- Called by **Judge** to validate persona consistency.
+
+**Storage & MCP Boundary:**
+
+- **File System / Git**: Reads SOUL.md from `Persona.soul_md_path`.
+- **Redis**: Fetches episodic memory (last N hours) keyed by `agent:{agent_id}:episodic:*`.
+- **Weaviate**: Queries `ChimeraPersona` and `PersonaMemory` collections for semantic matches.
+- **Postgres**: Reads `Persona` record to get active version and file path.
+
+**Error Handling:**
+
+- If SOUL.md file not found → raise `PersonaNotFoundError` (non-retryable, escalate to HITL).
+- If Redis/Weaviate unavailable → return persona-only context (degraded mode, log warning).
+
 ---
 
 ## 4. MCP Integration Points
@@ -270,9 +400,17 @@ This section summarizes how the major behaviors in `functional.md` are implement
 
   - Implemented via `Task.type = "trend_fetch"` plus the `skill_trend_fetcher` contract and MCP resources such as `news://{region}/trends` and `openclaw://moltbook/feeds/{...}` (Sections 2.1, 3.1, and 4.1).
 
-- **Generate channel‑specific content variants / Enforce brief and brand constraints (Stories 2.2.5–2.2.6)**
+- **Define agent persona via SOUL.md / Ensure persona consistency (Stories 2.1.4–2.1.5, 2.3.14)**
 
-  - Implemented by `Task.type = "content_generate"`, the `skill_content_generator` contract (Section 3.2), and the `Artifact` model with `kind = "content"` plus constraint fields in the skill input schema.
+  - Implemented by the `Persona` model (Section 2.3), SOUL.md file structure, and the `skill_persona_loader` contract (Section 3.4). Persona context is assembled before content generation and validated by Judge.
+
+- **Generate channel‑specific content variants / Enforce brief and brand constraints (Stories 2.2.7–2.2.8)**
+
+  - Implemented by `Task.type = "content_generate"`, the `skill_content_generator` contract (Section 3.2), and the `Artifact` model with `kind = "content"` plus constraint fields in the skill input schema. Workers MUST call `skill_persona_loader` before content generation to ensure persona consistency.
+
+- **Assemble persona context for content generation (Story 2.2.9)**
+
+  - Implemented by `skill_persona_loader` (Section 3.4) which combines SOUL.md, Redis episodic memory, and Weaviate semantic memory into a formatted context string for LLM injection.
 
 - **Auto‑approve / route to dashboard / retry low‑confidence content / explain decisions (Stories 2.3.7–2.3.10)**
 

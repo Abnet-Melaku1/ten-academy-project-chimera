@@ -31,59 +31,81 @@ It is the primary source of truth for how Chimera should behave from a **product
      so that I can validate the plan before content generation begins.
 
 3. **Constrain the campaign**
+
    - _As a Strategist_, I want to specify hard constraints (banned topics, languages, tone, legal rules)  
      so that the Planner, Workers, and Judge respect these constraints automatically.
 
+4. **Define agent persona via SOUL.md**
+
+   - _As a Strategist_, I want to define agent personas via SOUL.md files (backstory, voice, values, directives)  
+     so that personality remains consistent across thousands of posts and campaigns, ensuring brand identity is preserved.
+   - _As a Strategist_, I want persona definitions to be version-controlled (GitOps)  
+     so that persona changes are auditable and can be rolled back if needed.
+
+5. **Ensure persona consistency in content**
+   - _As a Planner/Worker Agent_, I want to load the agent's SOUL.md persona before generating content  
+     so that all outputs reflect the defined personality, voice, and ethical boundaries.
+
 ### 2.2 Planner–Worker Stories
 
-4. **Fetch localized trend data**
+6. **Fetch localized trend data**
 
    - _As a Planner Agent_, I want to call a trend‑fetching skill or MCP resource  
      so that I can ground my campaign plan in up‑to‑date, region‑specific trends.
 
-5. **Generate channel‑specific content variants**
+7. **Generate channel‑specific content variants**
 
    - _As a Worker Agent_, I want to generate multiple content variants for a specific channel and audience  
      so that the Strategist (and Judge) can choose or test the best‑performing options.
 
-6. **Enforce brief and brand constraints**
+8. **Enforce brief and brand constraints**
+
    - _As a Worker Agent_, I want to receive explicit constraints (tone, banned terms, length limits)  
      so that all generated content stays within brand and compliance boundaries.
 
+9. **Assemble persona context for content generation**
+   - _As a Worker Agent_, I want to assemble context from SOUL.md, recent episodic memory, and semantic long-term memory  
+     so that generated content reflects both the immutable persona and relevant historical interactions.
+
 ### 2.3 Judge–Strategist Stories (HITL)
 
-7. **Auto‑approve high‑confidence content**
+10. **Auto‑approve high‑confidence content**
 
-   - _As a Judge Agent_, I want to auto‑approve and schedule content when confidence > 0.90  
-     so that the system can operate autonomously for low‑risk artifacts.
+- _As a Judge Agent_, I want to auto‑approve and schedule content when confidence > 0.90  
+  so that the system can operate autonomously for low‑risk artifacts.
 
-8. **Route medium‑confidence content to dashboard**
+11. **Route medium‑confidence content to dashboard**
 
-   - _As a Judge Agent_, I want to send content with 0.70 ≤ confidence ≤ 0.90 to a human review queue  
-     so that Strategists can approve, edit, or reject borderline artifacts.
+- _As a Judge Agent_, I want to send content with 0.70 ≤ confidence ≤ 0.90 to a human review queue  
+  so that Strategists can approve, edit, or reject borderline artifacts.
 
-9. **Flag and retry low‑confidence content**
+12. **Flag and retry low‑confidence content**
 
-   - _As a Judge Agent_, I want to reject and trigger a retry or re‑plan when confidence < 0.70  
-     so that unsafe or low‑quality content never reaches external channels.
+- _As a Judge Agent_, I want to reject and trigger a retry or re‑plan when confidence < 0.70  
+  so that unsafe or low‑quality content never reaches external channels.
 
-10. **Explain decisions**
+13. **Explain decisions**
+
     - _As a Strategist_, I want to see why the Judge approved, rejected, or escalated an artifact  
       so that I can trust and tune the governance logic.
 
+14. **Validate persona consistency**
+    - _As a Judge Agent_, I want to verify that generated content aligns with the agent's SOUL.md persona  
+      so that personality drift is detected and corrected before publication.
+
 ### 2.4 Social Network & Economic Stories
 
-11. **Consume agent‑network signals**
+15. **Consume agent‑network signals**
 
     - _As a Planner Agent_, I want to read from OpenClaw/Moltbook feeds (via MCP resources)  
       so that campaigns can leverage current agent‑level activity and collaborations.
 
-12. **Publish status back to the network**
+16. **Publish status back to the network**
 
     - _As an Autonomous Influencer_, I want to post status updates and availability to the agent social network  
       so that other agents and sponsors can discover and collaborate with me.
 
-13. **Handle simple economic flows**
+17. **Handle simple economic flows**
     - _As an Autonomous Influencer_, I want to track a small on‑chain budget and basic P&L (via AgentKit)  
       so that I can pay for compute or receive sponsorship funds under configured limits.
 
@@ -99,6 +121,7 @@ It is the primary source of truth for how Chimera should behave from a **product
    - Strategist submits a campaign brief (goal, audience, channels, constraints) via a UI or API.
 2. **Planning**
    - Planner reads the brief + historical context (Postgres + Weaviate).
+   - Planner loads the agent's SOUL.md persona to ensure all tasks respect personality constraints.
    - Planner calls a trend skill/MCP resource (e.g., `news://ethiopia/trends`) and constructs a DAG:
      - Collect and summarize local trends.
      - Draft TikTok and Telegram content variants (Amharic + English).
@@ -106,7 +129,7 @@ It is the primary source of truth for how Chimera should behave from a **product
 3. **Task execution**
    - Workers execute DAG tasks one by one:
      - Trend Worker normalizes trends into a standard structure.
-     - Content Worker generates multiple caption variants per channel.
+     - Content Worker assembles context (SOUL.md + episodic memory + semantic memory) and generates multiple caption variants per channel.
      - Experiment Worker builds an experiment setup object (with metadata for Judge).
 4. **Judging & HITL**
    - Judge evaluates each artifact, assigns confidence, and routes:
@@ -149,4 +172,9 @@ The campaign runs with a mix of autonomous and human‑approved content, while a
   - For interactive Strategist flows (e.g., previewing a campaign plan), responses should typically be under a few seconds.
 
 - **Spec Alignment**
+
   - When behavior changes (e.g., new thresholds, new channels), the functional spec must be updated first, then technical spec, then implementation.
+
+- **Persona Consistency**
+  - All content generated by Workers MUST be evaluated by the Judge against the agent's SOUL.md persona to prevent personality drift.
+  - Persona definitions are immutable at runtime; changes require version-controlled updates and agent restart/reload.

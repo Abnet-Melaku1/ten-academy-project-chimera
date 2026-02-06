@@ -223,3 +223,105 @@ Analyze engagement metrics for published content and produce structured feedback
 
 - Support multi-touch attribution and cohort-based analysis.
 - Ingest sentiment analysis results as additional signals for `risk_score`.
+
+---
+
+### 4. `skill_persona_loader`
+
+**Version:** `v0.1`
+
+**Purpose**  
+Loads and assembles the agent's persona context from SOUL.md (immutable DNA), episodic memory (Redis), and semantic long-term memory (Weaviate) into a formatted context string for injection into LLM system prompts.
+
+**Role integration**
+
+- Called by the **Planner** at campaign start to load persona constraints and ensure all DAG tasks respect personality boundaries.
+- Called by **Workers** before content generation to assemble full context (SOUL.md + recent actions + relevant historical memories).
+- Called by **Judge** to validate that generated artifacts align with the persona (persona consistency check).
+
+**MCP & storage boundary**
+
+- **File System / Git**: Reads SOUL.md from the path specified in `Persona.soul_md_path` (version-controlled repository).
+- **Postgres**: Reads `Persona` table to get active persona version and file path for `agent_id`.
+- **Redis**: Fetches episodic memory (last N hours) from keys `agent:{agent_id}:episodic:{timestamp}`.
+- **Weaviate**:
+  - Queries `ChimeraPersona` collection for persona embeddings and metadata.
+  - Queries `PersonaMemory` collection for mutable memories (successful interactions, evolved traits).
+- **No MCP tools/resources**: This is an internal skill that orchestrates data layer access.
+
+**Inputs (JSON)**
+
+- `trace_id` (string, required): Correlates with Planner DAG instance or Worker task.
+- `agent_id` (string, required): Stable identifier for the agent (e.g., `"chimera-autonomous-influencer-et-v1"`).
+- `include_episodic` (boolean, optional, default `true`): Whether to fetch recent episodic memory from Redis.
+- `include_semantic` (boolean, optional, default `true`): Whether to query Weaviate for semantic memories.
+- `episodic_window_hours` (number, optional, default `1`): How many hours of episodic memory to retrieve (max 24).
+- `semantic_limit` (number, optional, default `5`): Maximum number of semantic memories to retrieve from Weaviate.
+
+**Outputs (JSON)**
+
+- `trace_id` (string): Echo of input `trace_id`.
+- `agent_id` (string)
+- `persona` (object):
+  - `name` (string): Display name from SOUL.md frontmatter.
+  - `agent_id` (string): Agent identifier.
+  - `version` (string): Persona version (Git commit SHA or semantic version).
+  - `voice_traits` (array[string]): List of voice characteristics (e.g., `["witty", "empathetic"]`).
+  - `core_beliefs` (array[string]): Core values and beliefs (e.g., `["sustainability-focused"]`).
+  - `directives` (array[string]): Hard constraints (e.g., `["Never discuss politics"]`).
+  - `backstory` (string): Full backstory text from SOUL.md body.
+  - `voice_guidelines` (string): Voice and tone guidelines from SOUL.md.
+  - `core_values` (string): Core values section from SOUL.md.
+- `episodic_memory` (array[object], optional):
+  - `timestamp` (string): ISO 8601 timestamp.
+  - `action` (string): Brief description of the action (e.g., `"replied_to_comment"`).
+  - `context` (string): Relevant context snippet.
+- `semantic_memories` (array[object], optional):
+  - `id` (string): Weaviate object ID.
+  - `content` (string): Memory content text.
+  - `relevance_score` (number): Semantic similarity score [0, 1].
+- `assembled_context` (string): **Formatted system prompt string** ready for LLM injection. Structure:
+
+  ```
+  # Agent Persona
+
+  Name: {persona.name}
+  Voice Traits: {persona.voice_traits.join(", ")}
+  Core Beliefs: {persona.core_beliefs.join(", ")}
+
+  ## Backstory
+  {persona.backstory}
+
+  ## Directives
+  {persona.directives.map(d => `- ${d}`).join("\n")}
+
+  ## Recent Context (Last {episodic_window_hours} hours)
+  {episodic_memory.map(m => `[${m.timestamp}] ${m.action}: ${m.context}`).join("\n")}
+
+  ## Relevant Memories
+  {semantic_memories.map(m => `- ${m.content}`).join("\n")}
+  ```
+
+- `errors` (array[object], optional):
+  - `code` (string): e.g., `"PERSONA_NOT_FOUND"`, `"REDIS_UNAVAILABLE"`, `"WEAVIATE_UNAVAILABLE"`, `"INVALID_SOUL_MD"`.
+  - `message` (string): Human-readable explanation.
+  - `retryable` (boolean): Whether the caller should retry.
+
+**Planner/Worker/Judge behavior on outputs**
+
+- **Planner**: Uses `assembled_context` to inject persona constraints into DAG planning prompts. If `persona.directives` conflict with campaign brief, Planner MUST escalate to HITL.
+- **Worker**: Uses `assembled_context` as the system prompt prefix before generating content. Ensures all outputs reflect persona voice and values.
+- **Judge**: Compares generated artifacts against `persona.voice_traits` and `persona.directives` to detect personality drift. If drift detected → lower confidence score or route to HITL.
+
+**Error handling**
+
+- If `PERSONA_NOT_FOUND` → non-retryable, escalate to HITL (agent cannot operate without persona).
+- If `REDIS_UNAVAILABLE` or `WEAVIATE_UNAVAILABLE` → return persona-only context (degraded mode), log warning, continue execution.
+- If `INVALID_SOUL_MD` → non-retryable, escalate to HITL (SOUL.md file is corrupted or malformed).
+
+**Implementation notes**
+
+- SOUL.md files MUST be stored in a version-controlled Git repository (GitOps pattern).
+- The `Persona` table in Postgres tracks which SOUL.md version is active for each `agent_id`.
+- Episodic memory in Redis should be TTL'd (e.g., expire after 24 hours) to prevent unbounded growth.
+- Semantic memories in Weaviate are permanent and evolve over time (per FR 1.2: Dynamic Persona Evolution).
