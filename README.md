@@ -3,6 +3,8 @@
 Project Chimera is an **autonomous influencer agent swarm** designed to run multi-channel social campaigns inside the **OpenClaw / Moltbook agent social network**.  
 It follows the **Planner / Worker / Judge** FastRender Swarm pattern and is built to be spec-driven, auditable, and safe-by-default.
 
+**Demo / project definition:** Since the recording is taking a bit longer and Loom is limited to 5 minutes, the chat history where the agent was asked about the project and its answer has been exported to **[cursor_project_chimera_definition.md](cursor_project_chimera_definition.md)**.
+
 ---
 
 ## Quick Start

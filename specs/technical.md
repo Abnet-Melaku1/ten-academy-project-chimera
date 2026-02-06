@@ -48,6 +48,16 @@ This document captures **architecture, data models, APIs, and integration detail
   - **Redis** – task queue + short‑term episodic cache (last 1 hour per agent).
   - **Git Repository** – version-controlled SOUL.md files (GitOps pattern).
 
+### 1.2 Human-Facing Interfaces
+
+Humans (Strategists, operators) interact with the agent system through one or more presentation-layer interfaces. All such interfaces MUST consume the same backend services (Planner, Judge, review queue) and MUST respect the same HITL thresholds and safety rules (see Section 5).
+
+- **Primary UI (dashboard / web app)** – The main interface for submitting briefs, viewing campaign plans, managing the HITL review queue (approve, edit, reject), viewing Judge rationales, and monitoring campaign status. Implemented as a front-end that calls the same APIs used by other clients.
+- **API** – REST or equivalent API for programmatic brief submission, plan retrieval, artifact review actions, and status queries. Enables automation, integrations, and headless operation.
+- **Other methods (extensible)** – Chat interfaces (conversational brief or Q&A), CLI tools, and notifications (e.g. HITL queue alerts, campaign completion) should be supported by designing backend contracts (events, API surface) so that additional front-ends can be added without duplicating business logic. Judge routing and HITL queue updates are consumable by any of these interfaces.
+
+Traceability: `specs/functional.md` Section 1.2 (Human–Agent Interaction), Stories 2.1.6–2.1.7.
+
 ---
 
 ## 2. Core Data Models (Conceptual)
@@ -391,6 +401,10 @@ This section summarizes how the major behaviors in `functional.md` are implement
 - **Create a campaign from a brief / See a human‑readable campaign plan (Stories 2.1.1–2.1.2)**
 
   - Implemented by the **Planner Service** and the `Campaign` / `Task` models (Sections 1.1 and 2.1). Briefs, markets, channels, and constraints are stored on `Campaign`, and DAG construction is captured via `Task` records.
+
+- **Interact with agents via UI / Interact via API or other methods (Stories 2.1.6–2.1.7)**
+
+  - Implemented by **Human-Facing Interfaces** (Section 1.2): primary UI (dashboard/web app), API for programmatic access, and extensibility for chat, CLI, and notifications. All interfaces consume the same Planner, Judge, and review-queue backend; HITL thresholds and safety rules apply uniformly.
 
 - **Constrain the campaign (Story 2.1.3)**
 

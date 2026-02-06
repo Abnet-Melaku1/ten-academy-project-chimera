@@ -14,6 +14,16 @@ It is the primary source of truth for how Chimera should behave from a **product
 - **External Channels** – Social platforms (TikTok, Telegram, X/Twitter, etc.) accessed via MCP tools/skills.
 - **OpenClaw / Moltbook Network** – Agent social network providing trend signals and agent interactions via MCP.
 
+### 1.2 Human–Agent Interaction (UI and Other Methods)
+
+Humans (Strategists and operators) must be able to interact with the agent system through multiple modalities so that different workflows, tools, and preferences are supported. The following should be considered:
+
+- **UI (primary)** – A dashboard or web application where Strategists can submit campaign briefs, view human‑readable campaign plans, manage the HITL review queue (approve, edit, reject artifacts), see Judge rationales, and monitor campaign status. This is the primary interface for day‑to‑day human–agent interaction.
+- **API** – Programmatic access for brief submission, plan retrieval, artifact review, and status queries so that automation, integrations, and custom tooling can drive or complement the UI.
+- **Other methods** – Chat interfaces (e.g. conversational brief submission or Q&A with the Planner), CLI tools for operators, notifications (e.g. when items enter the HITL queue or when campaigns complete), and future modalities should be considered in the architecture so that the system remains extensible and usable across contexts.
+
+All human-facing interfaces MUST consume the same backend services (Planner, Judge, review queue) and respect the same HITL thresholds and safety rules; the choice of UI, API, chat, or CLI is a presentation-layer concern.
+
 ---
 
 ## 2. Core User Stories
@@ -43,69 +53,80 @@ It is the primary source of truth for how Chimera should behave from a **product
      so that persona changes are auditable and can be rolled back if needed.
 
 5. **Ensure persona consistency in content**
+
    - _As a Planner/Worker Agent_, I want to load the agent's SOUL.md persona before generating content  
      so that all outputs reflect the defined personality, voice, and ethical boundaries.
 
+6. **Interact with agents via UI**
+
+   - _As a Strategist_, I want to use a dashboard or web UI to submit briefs, view campaign plans, and manage the HITL review queue  
+     so that I can work with the agents in a single, human-friendly interface.
+
+7. **Interact via API or other methods**
+   - _As a Strategist or operator_, I want to use an API, chat, CLI, or notifications to submit briefs, query status, or respond to HITL items  
+     so that I can integrate with existing tools or prefer a non-UI workflow when appropriate.
+
 ### 2.2 Planner–Worker Stories
 
-6. **Fetch localized trend data**
+8. **Fetch localized trend data**
 
    - _As a Planner Agent_, I want to call a trend‑fetching skill or MCP resource  
      so that I can ground my campaign plan in up‑to‑date, region‑specific trends.
 
-7. **Generate channel‑specific content variants**
+9. **Generate channel‑specific content variants**
 
    - _As a Worker Agent_, I want to generate multiple content variants for a specific channel and audience  
      so that the Strategist (and Judge) can choose or test the best‑performing options.
 
-8. **Enforce brief and brand constraints**
+10. **Enforce brief and brand constraints**
 
-   - _As a Worker Agent_, I want to receive explicit constraints (tone, banned terms, length limits)  
-     so that all generated content stays within brand and compliance boundaries.
+- _As a Worker Agent_, I want to receive explicit constraints (tone, banned terms, length limits)  
+  so that all generated content stays within brand and compliance boundaries.
 
-9. **Assemble persona context for content generation**
-   - _As a Worker Agent_, I want to assemble context from SOUL.md, recent episodic memory, and semantic long-term memory  
-     so that generated content reflects both the immutable persona and relevant historical interactions.
+11. **Assemble persona context for content generation**
+
+- _As a Worker Agent_, I want to assemble context from SOUL.md, recent episodic memory, and semantic long-term memory  
+  so that generated content reflects both the immutable persona and relevant historical interactions.
 
 ### 2.3 Judge–Strategist Stories (HITL)
 
-10. **Auto‑approve high‑confidence content**
+12. **Auto‑approve high‑confidence content**
 
 - _As a Judge Agent_, I want to auto‑approve and schedule content when confidence > 0.90  
   so that the system can operate autonomously for low‑risk artifacts.
 
-11. **Route medium‑confidence content to dashboard**
+13. **Route medium‑confidence content to dashboard**
 
 - _As a Judge Agent_, I want to send content with 0.70 ≤ confidence ≤ 0.90 to a human review queue  
   so that Strategists can approve, edit, or reject borderline artifacts.
 
-12. **Flag and retry low‑confidence content**
+14. **Flag and retry low‑confidence content**
 
 - _As a Judge Agent_, I want to reject and trigger a retry or re‑plan when confidence < 0.70  
   so that unsafe or low‑quality content never reaches external channels.
 
-13. **Explain decisions**
+15. **Explain decisions**
 
     - _As a Strategist_, I want to see why the Judge approved, rejected, or escalated an artifact  
       so that I can trust and tune the governance logic.
 
-14. **Validate persona consistency**
+16. **Validate persona consistency**
     - _As a Judge Agent_, I want to verify that generated content aligns with the agent's SOUL.md persona  
       so that personality drift is detected and corrected before publication.
 
 ### 2.4 Social Network & Economic Stories
 
-15. **Consume agent‑network signals**
+17. **Consume agent‑network signals**
 
     - _As a Planner Agent_, I want to read from OpenClaw/Moltbook feeds (via MCP resources)  
       so that campaigns can leverage current agent‑level activity and collaborations.
 
-16. **Publish status back to the network**
+18. **Publish status back to the network**
 
     - _As an Autonomous Influencer_, I want to post status updates and availability to the agent social network  
       so that other agents and sponsors can discover and collaborate with me.
 
-17. **Handle simple economic flows**
+19. **Handle simple economic flows**
     - _As an Autonomous Influencer_, I want to track a small on‑chain budget and basic P&L (via AgentKit)  
       so that I can pay for compute or receive sponsorship funds under configured limits.
 
